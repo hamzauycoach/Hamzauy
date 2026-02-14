@@ -1903,7 +1903,12 @@ html[lang="en"] .hero-content p {
 /* ===== HM Champions Layout ===== */
 .hm-champions {
     padding: 80px 20px;
-    background-color: #050608;
+    background-color: hsl(184, 100%, 94%);
+    color: #ffffff;
+}
+body.dark-mode .hm-champions {
+    padding: 80px 20px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
     color: #ffffff;
 }
 
@@ -1935,7 +1940,7 @@ html[lang="en"] .hero-content p {
     margin: 0 auto;
     font-size: 14px;
     line-height: 1.6;
-    color: #c7c7c7;
+    color: #6b6b6b;
 }
 
 .hm-champions-slider {
