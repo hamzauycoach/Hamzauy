@@ -2000,11 +2000,26 @@ body.dark-mode .hm-champions {
 }
 
 .hm-champions-prev {
-    left: 10px;
+    left: 10px;size: 24px;
+    background-color: #128C7E;
+    color: black;
+}
+
+body.dark-mode .hm-champions-prev {
+    background-color: #128C7E;
+    color: white;
 }
 
 .hm-champions-next {
     right: 10px;
+    size: 24px;
+    background-color: #128C7E;
+    color: black;
+}
+
+body.dark-mode .hm-champions-next {
+    background-color: #128C7E;
+    color: white;
 }
 
 .hm-champions-nav:hover {
