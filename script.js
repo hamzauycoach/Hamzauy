@@ -285,16 +285,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Prevent iOS double-tap zoom on buttons (but not navbar toggle)
-if ('ontouchstart' in window) {
-    document.querySelectorAll('button:not(.navbar-toggler), .btn').forEach(element => {
-        element.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            this.click();
-        }, { passive: false });
-    });
-}
-
 // Plan Selection - Save to localStorage and redirect to payment
 document.querySelectorAll('.plan-select-btn').forEach(button => {
     button.addEventListener('click', function(e) {
