@@ -307,14 +307,14 @@ html[lang="ar"] body {
 }
 
 .plan-option.featured label {
-    border-color: #63a4a8;
+    border-color: #000;
 }
 
 .popular-badge {
     position: absolute;
     top: -12px;
     right: 20px;
-    background: linear-gradient(135deg, #63a4a8, #4a8a8e);
+    background: #000;
     color: #fff;
     padding: 0.3rem 1rem;
     border-radius: 20px;
