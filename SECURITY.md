@@ -17,7 +17,7 @@ Do not open a public issue for security vulnerabilities.
 
 Report privately via:
 
-- WhatsApp: [+20 155 740 3075](https://wa.me/201557403075)
+- Email: `hamzauybatisha@gmail.com`
 - GitHub Security Advisory: Repository `Security` tab -> `Report a vulnerability`
 
 ## What to Include
