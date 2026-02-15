@@ -2171,16 +2171,61 @@ html[dir="rtl"] .hm-champions-next {
 }
 
 .site-credits {
-    padding: 20px 16px 28px;
-    text-align: center;
-    background: #030407;
-    border-top: 1px solid rgba(99, 164, 168, 0.25);
+    background: #020202;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 26px 16px;
 }
 
-.site-credits p {
+.site-credits-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 28px;
+    flex-wrap: wrap;
+}
+
+.site-credits-text,
+.site-credits-location {
     margin: 0;
-    color: #b8c3c9;
+    color: #d2d2d2;
     font-size: 13px;
+    letter-spacing: 0.04em;
+}
+
+.site-credits-text a,
+.site-credits-location a,
+.site-credits-links a {
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.site-credits-text a:hover,
+.site-credits-location a:hover,
+.site-credits-links a:hover {
+    color: #63a4a8;
+}
+
+.site-credits-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 18px;
+    flex-wrap: wrap;
+}
+
+.site-credits-links a {
+    font-size: 12px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    color: #b6c0c8;
+}
+
+@media (max-width: 900px) {
+    .site-credits-inner {
+        flex-direction: column;
+        text-align: center;
+    }
 }
