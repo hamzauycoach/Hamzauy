@@ -1,6 +1,9 @@
 // Configuration
 const WHATSAPP_NUMBER = '201557403075'; // Without + sign
 
+// Replit Backend API URL
+const REPLIT_API_URL = 'https://149ad50b-c39c-41e9-9e0d-df5ffdddccdd-00-eqw4odlh38f7.riker.replit.dev/api';
+
 // Language System
 const html = document.documentElement;
 const FIXED_LANG = 'ar';
@@ -53,7 +56,7 @@ const modalAmountWallet = document.getElementById('modalAmountWallet');
 const planData = {
     regular: {
         name: {en: 'Regular', ar: 'عادي'},
-        price: 600,
+        price: 800,
         features: [
             {en: '✓ Customized diet plan', ar: '✓ نظام غذائي مخصص'},
             {en: '✓ Training program', ar: '✓ برنامج تدريبي'},
@@ -63,7 +66,7 @@ const planData = {
     },
     advanced: {
         name: {en: 'Advanced', ar: 'متقدم'},
-        price: 1000,
+        price: 1400,
         features: [
             {en: '✓ Customized diet plan', ar: '✓ نظام غذائي مخصص'},
             {en: '✓ Training program', ar: '✓ برنامج تدريبي'},
@@ -75,7 +78,7 @@ const planData = {
     },
     vip: {
         name: {en: 'VIP', ar: 'VIP'},
-        price: 1500,
+        price: 1800,
         features: [
             {en: '✓ All Advanced features', ar: '✓ جميع مميزات المتقدم'},
             {en: '✓ 24-hour delivery', ar: '✓ تسليم خلال 24 ساعة'},
@@ -260,7 +263,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Confirm Payment Button - Save to Google Sheets & WhatsApp
+// Confirm Payment Button - Save to Database & WhatsApp
 confirmPaymentBtn.addEventListener('click', async function() {
     // Get selected plan info
     const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
@@ -271,40 +274,31 @@ confirmPaymentBtn.addEventListener('click', async function() {
     const customerAddress = document.getElementById('address').value;
     const customerCity = document.getElementById('city').value;
     const customerCountry = document.getElementById('country').value;
-    const customerNotes = document.getElementById('notes').value || 'No additional notes';
+    const customerNotes = document.getElementById('notes').value || null;
     
     // Create order object
     const orderData = {
         orderId: 'ORD-' + Date.now(),
-        timestamp: new Date().toISOString(),
-        customer: {
-            name: customerName,
-            email: customerEmail,
-            phone: customerPhone,
-            address: customerAddress,
-            city: customerCity,
-            country: customerCountry,
-            notes: customerNotes
-        },
-        plan: {
-            type: selectedPlan,
-            name: plan.name.en,
-            nameAr: plan.name.ar,
-            price: plan.price,
-            currency: 'EGP'
-        }
+        customerName: customerName,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        customerAddress: customerAddress,
+        customerCity: customerCity,
+        customerCountry: customerCountry,
+        customerNotes: customerNotes,
+        planType: selectedPlan,
+        planName: plan.name.en,
+        planNameAr: plan.name.ar,
+        planPrice: plan.price,
+        currency: 'EGP'
     };
     
-    // Save order to Google Sheets
-    const savedToSheets = await saveToGoogleSheets(orderData);
-    if (savedToSheets) {
-        alert(currentLang === 'ar'
-            ? 'تم حفظ الطلب بنجاح في Google Sheets.'
-            : 'Order saved successfully to Google Sheets.');
+    // Save order to Replit database
+    const savedToDb = await saveOrderToDatabase(orderData);
+    if (savedToDb) {
+        console.log('✅ Order saved to database:', orderData.orderId);
     } else {
-        alert(currentLang === 'ar'
-            ? 'تعذر حفظ الطلب في Google Sheets. سيتم إرسال البيانات عبر واتساب.'
-            : 'Could not save order to Google Sheets. Details will still be sent via WhatsApp.');
+        console.warn('⚠️ Could not save order to database. WhatsApp will still be sent.');
     }
     
     // Create WhatsApp message
@@ -352,48 +346,28 @@ window.addEventListener('load', function() {
 });
 
 
-// Save orders to Google Sheets using Google Sheets API
-const SHEET_ID = '1Cmp9_qUDexlxhQcL5aA3yy7devuPlVAO3cqXHiJ6VGc';
-const API_KEY = 'AIzaSyDGbiFbVcWk6K6C0erIfyTJ3JJ4vh-qm0k';
-
-async function saveToGoogleSheets(orderData) {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A:K:append?valueInputOption=USER_ENTERED&key=${API_KEY}`;
-    const row = [
-        new Date().toISOString(),
-        orderData.orderId,
-        orderData.customer.name,
-        orderData.customer.email,
-        orderData.customer.phone,
-        orderData.plan.name,
-        orderData.plan.price,
-        orderData.customer.address,
-        orderData.customer.city,
-        orderData.customer.country,
-        orderData.customer.notes
-    ];
-
+// Save orders to Replit Database
+async function saveOrderToDatabase(orderData) {
     try {
-        const response = await fetch(url, {
+        const response = await fetch(`${REPLIT_API_URL}/orders`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                values: [row]
-            })
+            body: JSON.stringify(orderData)
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error('❌ Google Sheets API error:', response.status, errorData);
+            console.error('❌ Database API error:', response.status, errorData);
             return false;
         }
 
         const data = await response.json();
-        console.log('✅ Saved to Google Sheets:', data);
+        console.log('✅ Saved to database:', data);
         return true;
     } catch (error) {
-        console.error('❌ Error saving to Google Sheets:', error);
+        console.error('❌ Error saving to database:', error);
         return false;
     }
 }
