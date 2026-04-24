@@ -20,5 +20,4 @@ Official frontend codebase for the Hamzauy Coaching website.
 Security reports are accepted privately. See `SECURITY.md`.
 
 ## License
-
 This project is proprietary. See `LICENSE`.
