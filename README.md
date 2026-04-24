@@ -16,6 +16,7 @@ Official frontend codebase for the Hamzauy Coaching website.
 - `media/` - images, video, and favicon assets
 - `backend/` - server, APIs, database
 
+## Security
 Security reports are accepted privately. See `SECURITY.md`.
 
 ## License
