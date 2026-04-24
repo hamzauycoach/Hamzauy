@@ -14,7 +14,6 @@ Official frontend codebase for the Hamzauy Coaching website.
 - `payment/` - payment pages
 - `free-plan-page/` - free plan pages
 - `media/` - images, video, and favicon assets
-- `backend/` - server, APIs, database
 
 ## Security
 
