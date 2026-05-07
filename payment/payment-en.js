@@ -1,8 +1,12 @@
 // Configuration
 const WHATSAPP_NUMBER = '201557403075'; // Without + sign
 
-// Replit Backend API URL
-const REPLIT_API_URL = 'https://149ad50b-c39c-41e9-9e0d-df5ffdddccdd-00-eqw4odlh38f7.riker.replit.dev/api';
+// Backend API URL
+const API_URL = 'https://hamzauy-backend-516915806239.europe-west1.run.app';
+const ORDER_API_ENDPOINTS = [
+    `${API_URL}/orders`,
+    `${API_URL}/api/orders`
+];
 
 // Language System
 const html = document.documentElement;
@@ -265,55 +269,39 @@ document.addEventListener('keydown', function(e) {
 
 // Confirm Payment Button - Save to Database & WhatsApp
 confirmPaymentBtn.addEventListener('click', async function() {
-    // Get selected plan info
-    const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
-    const plan = planData[selectedPlan];
-    const customerName = document.getElementById('fullName').value;
-    const customerPhone = document.getElementById('phone').value;
-    const customerEmail = document.getElementById('email').value;
-    const customerAddress = document.getElementById('address').value;
-    const customerCity = document.getElementById('city').value;
-    const customerCountry = document.getElementById('country').value;
-    const customerNotes = document.getElementById('notes').value || null;
-    
-    // Create order object
-    const orderData = {
-        orderId: 'ORD-' + Date.now(),
-        customerName: customerName,
-        customerEmail: customerEmail,
-        customerPhone: customerPhone,
-        customerAddress: customerAddress,
-        customerCity: customerCity,
-        customerCountry: customerCountry,
-        customerNotes: customerNotes,
-        planType: selectedPlan,
-        planName: plan.name.en,
-        planNameAr: plan.name.ar,
-        planPrice: plan.price,
-        currency: 'EGP'
-    };
-    
-    // Save order to Replit database
-    const savedToDb = await saveOrderToDatabase(orderData);
-    if (savedToDb) {
-        console.log('✅ Order saved to database:', orderData.orderId);
-    } else {
-        console.warn('⚠️ Could not save order to database. WhatsApp will still be sent.');
+    const shippingForm = document.getElementById('shippingForm');
+
+    if (!validatePhone()) {
+        phoneInput.focus();
+        return;
     }
-    
-    // Create WhatsApp message
-    const message = currentLang === 'ar' 
-        ? `مرحباً، أنا ${customerName}%0A%0Aقمت بالدفع للخطة: ${plan.name.ar}%0Aالمبلغ: ${plan.price} جنيه%0Aرقم الهاتف: ${customerPhone}%0A%0Aسأقوم بإرسال لقطة شاشة تأكيد الدفع.`
-        : `Hello, I'm ${customerName}%0A%0AI have completed payment for: ${plan.name.en} Plan%0AAmount: ${plan.price} EGP%0APhone: ${customerPhone}%0A%0AI will send the payment confirmation screenshot.`;
-    
-    // Open WhatsApp
-    const whatsappURL = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
-    window.open(whatsappURL, '_blank');
-    
-    // Close modal after a short delay
-    setTimeout(() => {
-        qrModal.classList.remove('show');
-    }, 500);
+
+    if (!shippingForm.checkValidity()) {
+        shippingForm.reportValidity();
+        return;
+    }
+
+    const orderData = buildOrderData();
+
+    setConfirmPaymentLoading(true);
+    try {
+        const savedOrder = await saveOrderToDatabase(orderData);
+        console.log('✅ Order saved to database:', savedOrder.orderId || orderData.orderId);
+
+        openWhatsappConfirmation(orderData);
+
+        setTimeout(() => {
+            qrModal.classList.remove('show');
+        }, 500);
+    } catch (error) {
+        console.error('❌ Could not save order to database:', error);
+        alert(currentLang === 'ar'
+            ? 'حدث خطأ أثناء حفظ الطلب. يرجى المحاولة مرة أخرى.'
+            : 'There was a problem saving your order. Please try again.'
+        );
+    } finally {
+        setConfirmPaymentLoading(false);
+    }
 });
 
 // Dark Mode Support
@@ -346,28 +334,89 @@ window.addEventListener('load', function() {
 });
 
 
-// Save orders to Replit Database
-async function saveOrderToDatabase(orderData) {
-    try {
-        const response = await fetch(`${REPLIT_API_URL}/orders`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(orderData)
-        });
+function getActivePaymentMethod() {
+    const activeTab = document.querySelector('.payment-tab.active');
+    return activeTab ? activeTab.getAttribute('data-method') : 'instapay';
+}
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('❌ Database API error:', response.status, errorData);
-            return false;
-        }
+function buildOrderData() {
+    const selectedPlan = document.querySelector('input[name="plan"]:checked').value;
+    const plan = planData[selectedPlan];
 
-        const data = await response.json();
-        console.log('✅ Saved to database:', data);
-        return true;
-    } catch (error) {
-        console.error('❌ Error saving to database:', error);
-        return false;
+    return {
+        orderId: 'ORD-' + Date.now(),
+        customerName: document.getElementById('fullName').value.trim(),
+        customerEmail: document.getElementById('email').value.trim(),
+        customerPhone: document.getElementById('phone').value.trim(),
+        customerAddress: document.getElementById('address').value.trim(),
+        customerCity: document.getElementById('city').value.trim(),
+        customerCountry: document.getElementById('country').value,
+        customerNotes: document.getElementById('notes').value.trim() || null,
+        planType: selectedPlan,
+        planName: plan.name.en,
+        planNameAr: plan.name.ar,
+        planPrice: plan.price,
+        paymentMethod: getActivePaymentMethod(),
+        paymentStatus: 'pending_confirmation',
+        orderStatus: 'new',
+        currency: 'EGP',
+        language: currentLang,
+        createdAt: new Date().toISOString()
+    };
+}
+
+function setConfirmPaymentLoading(isLoading) {
+    confirmPaymentBtn.disabled = isLoading;
+    confirmPaymentBtn.classList.toggle('loading', isLoading);
+
+    const buttonText = confirmPaymentBtn.querySelector('span');
+    if (!buttonText) return;
+
+    if (isLoading) {
+        buttonText.textContent = currentLang === 'ar' ? 'جاري حفظ الطلب...' : 'Saving order...';
+    } else {
+        buttonText.textContent = buttonText.getAttribute(`data-${currentLang}`);
     }
+}
+
+function openWhatsappConfirmation(orderData) {
+    const plan = planData[orderData.planType];
+    const text = currentLang === 'ar'
+        ? `مرحباً، أنا ${orderData.customerName}\n\nقمت بالدفع للخطة: ${plan.name.ar}\nالمبلغ: ${plan.price} جنيه\nرقم الطلب: ${orderData.orderId}\nرقم الهاتف: ${orderData.customerPhone}\n\nسأقوم بإرسال لقطة شاشة تأكيد الدفع.`
+        : `Hello, I'm ${orderData.customerName}\n\nI have completed payment for: ${plan.name.en} Plan\nAmount: ${plan.price} EGP\nOrder ID: ${orderData.orderId}\nPhone: ${orderData.customerPhone}\n\nI will send the payment confirmation screenshot.`;
+    const whatsappURL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+    window.open(whatsappURL, '_blank');
+}
+
+// Save orders to Database
+async function saveOrderToDatabase(orderData) {
+    let lastError = null;
+
+    for (const endpoint of ORDER_API_ENDPOINTS) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                console.log('✅ Saved to database:', data);
+                return data && Object.keys(data).length ? data : orderData;
+            }
+
+            lastError = new Error(`Database API error ${response.status} at ${endpoint}`);
+            lastError.details = data;
+            console.error('❌ Database API error:', response.status, data);
+        } catch (error) {
+            lastError = error;
+            console.error('❌ Error saving to database:', error);
+        }
+    }
+
+    throw lastError || new Error('Could not save order to database');
 }
